@@ -9,6 +9,14 @@ export class Player {
   coin = 0;
   xp = 0;
 
+  description = "";
+  imageUrl = "";
+  speed = 0;
+  melee = 0;
+  ranged = 0;
+  defense = 0;
+  hp = 50;
+
   constructor(id: string) {
     this.id = id;
     this.mention = `<@${this.id}>`;
