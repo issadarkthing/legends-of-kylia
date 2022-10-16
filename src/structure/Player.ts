@@ -1,4 +1,6 @@
 import { CommandError } from "@jiman24/slash-commandment";
+import { code } from "@jiman24/discordjs-utils";
+import { EmbedBuilder } from "discord.js";
 import { client } from "..";
 
 
@@ -55,6 +57,21 @@ export class Player {
     Object.assign(player, data);
 
     return player;
+  }
+
+  show() {
+    const embed = new EmbedBuilder()
+      .setColor("Random")
+      .setThumbnail(this.imageUrl)
+      .setDescription(this.description)
+      .addFields([
+        { name: "Speed", value: code(this.speed), inline: true },
+        { name: "Melee", value: code(this.melee), inline: true },
+        { name: "Ranged", value: code(this.ranged), inline: true },
+        { name: "Defense", value: code(this.defense), inline: true },
+      ]);
+
+    return embed;
   }
 
   async save() {

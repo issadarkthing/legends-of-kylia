@@ -38,5 +38,11 @@ client.discordClient.on("ready", () => {
   client.commandManager.registerCommands(path.resolve(__dirname, "./commands"));
 });
 
+client.discordClient.on("interactionCreate", i => {
+  if (i.isCommand()) {
+    client.commandManager.handleInteraction(i);
+  }
+})
+
 
 client.discordClient.login(process.env.BOT_TOKEN);
