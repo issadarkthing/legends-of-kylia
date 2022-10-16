@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "dev": "tsc -w",
+    "watch": "tsc -w",
     "build": "tsc",
-    "watch": "nodemon dist/index.js"
+    "dev": "nodemon dist/index.js"
   },
   "devDependencies": {
     "typescript": "^4.8.4"
