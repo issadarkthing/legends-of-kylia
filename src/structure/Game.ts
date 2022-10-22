@@ -224,7 +224,7 @@ export class Game {
     this.gameText.setDescription(text);
 
     if (teamB.player.hp <= 0) {
-      throw new EndGameError();
+      throw new EndGameError(teamA.player);
     }
   }
 
