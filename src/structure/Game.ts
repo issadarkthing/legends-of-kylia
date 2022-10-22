@@ -30,6 +30,7 @@ interface Team {
 }
 
 export class Game {
+  private interval: number = time.SECOND * 3;
   private i: CommandInteraction;
   private teamA: Team;
   private teamB: Team;
@@ -113,11 +114,13 @@ export class Game {
 
       if (totalRollB > totalRollA) {
         text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
+        this.gameText.setDescription(text);
         throw new EndRoundError();
       }
     } else if (attackType === "Ranged") {
       if (totalRollA <= 10) {
         text += `${nameA} rolled lower than 10 thus neutral is reset\n`;
+        this.gameText.setDescription(text);
         throw new EndRoundError();
       }
     }
@@ -178,6 +181,7 @@ export class Game {
 
       if (totalRollB > totalRollA) {
         text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
+        this.gameText.setDescription(text);
         throw new EndRoundError();
       }
     }
@@ -224,25 +228,23 @@ export class Game {
   }
 
   private async startRound(teamA: Team, teamB: Team) {
-    const sleepTime = time.SECOND * 3;
-
     // declaration phase
     const attackType = await this.getAttackType(teamA.player);
 
     // ready phase
     this.runReadyPhase(attackType, teamA, teamB);
     await this.updateGameText();
-    await sleep(sleepTime);
+    await sleep(this.interval);
 
     // attack phase
     this.runAttackPhase(attackType, teamA, teamB);
     await this.updateGameText();
-    await sleep(sleepTime);
+    await sleep(this.interval);
 
     // damage phase
     this.runDamagePhase(attackType, teamA, teamB);
     await this.updateGameText();
-    await sleep(sleepTime);
+    await sleep(this.interval);
   }
 
   async run() {
@@ -264,6 +266,8 @@ export class Game {
         if (err instanceof UnresponsiveError) {
           throw new CommandError(err.message);
         } else if (err instanceof EndRoundError) {
+          await this.updateGameText();
+          await sleep(this.interval)
           continue;
         } else if (err instanceof EndGameError) {
           break;
