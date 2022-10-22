@@ -1,5 +1,5 @@
 import { ButtonHandler } from "@jiman24/discordjs-button";
-import { random } from "@jiman24/discordjs-utils";
+import { progressBar, random, sleep, time } from "@jiman24/discordjs-utils";
 import { CommandError } from "@jiman24/slash-commandment";
 import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { Player } from "./Player";
@@ -55,6 +55,15 @@ export class Game {
     return random.integer(1, 20);
   }
 
+  private playerShow(team: Team) {
+    const embed = team.player.show();
+    embed.addFields([
+      { name: "**----**", value: progressBar(team.player.hp, team.initialHP) }
+    ])
+
+    return embed;
+  }
+
   private async getAttackType(player: Player) {
     const button = new ButtonHandler(
       this.i, 
@@ -78,11 +87,11 @@ export class Game {
 
   private createRollText(team: Team, roll: number, modifier: number) {
     const totalRoll = roll + modifier;
-    return `${team.player.mention} rolled ${roll} + ${modifier} = ${totalRoll}`;
+    return `${team.player.mention} rolled ${roll} + ${modifier} = ${totalRoll}\n`;
   }
 
   private runReadyPhase(attackType: Attack, teamA: Team, teamB: Team) {
-    let text = "";
+    let text = "**__Ready Phase__**\n";
 
     const nameA = teamA.player.mention;
     const rollA = this.roll();
@@ -99,16 +108,16 @@ export class Game {
     if (attackType === "Melee") {
       if (rollA === 20) {
         teamA.attackCount += 1;
-        text += `${nameA} got nat 20 and receives 2 chances in attack phase`;
+        text += `${nameA} got nat 20 and receives 2 chances in attack phase\n`;
       }
 
       if (totalRollB > totalRollA) {
-        text += `${nameB} rolled higher than ${nameA} thus neutral is reset`;
+        text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
         throw new EndRoundError();
       }
     } else if (attackType === "Ranged") {
       if (totalRollA <= 10) {
-        text += `${nameA} rolled lower than 10 thus neutral is reset`;
+        text += `${nameA} rolled lower than 10 thus neutral is reset\n`;
         throw new EndRoundError();
       }
     }
@@ -117,29 +126,33 @@ export class Game {
   }
 
   private runAttackPhase(attackType: Attack, teamA: Team, teamB: Team) {
-    let text = "";
-    let rollA = this.roll();
+    let text = "**__Attack Phase__**\n";
 
     const nameA = teamA.player.mention;
-    const nameB = teamB.player.mention;
+    let rollA = this.roll();
 
+    const nameB = teamB.player.mention;
     const rollB = this.roll();
-    const totalRollB = rollB + teamB.player.defense;
+    const modifierB = teamB.player.defense;
+    const totalRollB = rollB + modifierB;
+    text += this.createRollText(teamB, rollB, modifierB);
     const canReroll = teamA.attackCount === 2;
     teamA.attackCount = 1;
 
     if (attackType === "Melee") {
-      let totalRollA = rollA + teamA.player.melee;
+      const modifierA = teamA.player.melee;
+      let totalRollA = rollA + modifierA;
+      text += this.createRollText(teamA, rollA, modifierA);
 
       if (canReroll) {
         rollA = this.roll();
         totalRollA = rollA + teamA.player.melee;
-        text += `${nameA} re-rolled and got ${rollA} + ${teamA.player.melee} = ${totalRollA}`;
+        text += `${nameA} re-rolled and got ${rollA} + ${teamA.player.melee} = ${totalRollA}\n`;
       }
 
       if (rollA === 20) {
         teamA.attackCount += 1;   
-        text += `${nameA} got nat 20 and receives 2 chances in damage phase`;
+        text += `${nameA} got nat 20 and receives 2 chances in damage phase\n`;
       }
 
       // initiate counter
@@ -148,21 +161,23 @@ export class Game {
 
         if (counterResult >= 11) {
           teamB.counter = true;
-          text += `${nameB} rolled higher than ${nameA} and countered successfully`;
+          text += `${nameB} rolled higher than ${nameA} and countered successfully\n`;
         }
       }
 
     } else if (attackType === "Ranged") {
-      let totalRollA = rollA + teamA.player.ranged;
+      const modifierA = teamA.player.melee;
+      let totalRollA = rollA + modifierA;
+      text += this.createRollText(teamA, rollA, modifierA);
 
       if (totalRollB > totalRollA && canReroll) {
         rollA = this.roll();
         totalRollA = rollA + teamA.player.ranged;
-        text += `${nameB} rolled higher thus ${nameA} re-rolled and got ${totalRollA}`
+        text += `${nameB} rolled higher thus ${nameA} re-rolled and got ${totalRollA}\n`
       }
 
       if (totalRollB > totalRollA) {
-        text += `${nameB} rolled higher than ${nameA} thus neutral is reset`;
+        text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
         throw new EndRoundError();
       }
     }
@@ -171,7 +186,7 @@ export class Game {
   }
 
   private async runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
-    let text = "";
+    let text = "**__Damage Phase__**\n";
     let damage = 0;
     let attackDamage = 0;
 
@@ -193,37 +208,41 @@ export class Game {
     }
 
     teamB.player.hp -= damage;
-    text += `${nameA} dealt ${damage} damage to ${nameB}!`;
+    text += `${nameA} dealt ${damage} damage to ${nameB}!\n`;
 
     this.gameText.setDescription(text);
   }
 
   private async updateGameText() {
-    await this.i.editReply({ 
-      embeds: [
-        this.teamA.player.show(),
-        this.gameText,
-        this.teamB.player.show(),
-      ] 
-    });
+    const embeds = [
+      this.playerShow(this.teamA),
+      this.gameText,
+      this.playerShow(this.teamB),
+    ];
+
+    await this.i.editReply({ embeds });
   }
 
   private async startRound(teamA: Team, teamB: Team) {
+    const sleepTime = time.SECOND * 3;
 
     // declaration phase
     const attackType = await this.getAttackType(teamA.player);
 
     // ready phase
     this.runReadyPhase(attackType, teamA, teamB);
-    this.updateGameText();
+    await this.updateGameText();
+    await sleep(sleepTime);
 
     // attack phase
     this.runAttackPhase(attackType, teamA, teamB);
-    this.updateGameText();
+    await this.updateGameText();
+    await sleep(sleepTime);
 
     // damage phase
     this.runDamagePhase(attackType, teamA, teamB);
-    this.updateGameText();
+    await this.updateGameText();
+    await sleep(sleepTime);
   }
 
   async run() {
@@ -242,16 +261,14 @@ export class Game {
       } catch (e) {
         const err = e as Error;
 
-        if (err as UnresponsiveError) {
+        if (err instanceof UnresponsiveError) {
           throw new CommandError(err.message);
-        } else if (err as EndRoundError) {
-          await this.updateGameText();
+        } else if (err instanceof EndRoundError) {
           continue;
-        } else if (err as EndGameError) {
+        } else if (err instanceof EndGameError) {
           break;
         }
       } finally {
-
         teams.reverse();
       }
     }
