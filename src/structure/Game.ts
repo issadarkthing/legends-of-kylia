@@ -14,13 +14,21 @@ export class UnresponsiveError extends Error {
     this.player = player;
     this.message = `${player.mention} is unresponsive`;
   }
-};
+}
 
 // error thrown when the round ended
 class EndRoundError extends Error {}
 
 // error thrown when the game ended
-class EndGameError extends Error {}
+class EndGameError extends Error {
+  player: Player;
+
+  constructor(player: Player) {
+    super();
+    this.player = player;
+    this.message = `${player.mention} won the battle!`;
+  }
+}
 
 interface Team {
   player: Player;
@@ -213,8 +221,11 @@ export class Game {
 
     teamB.player.hp -= damage;
     text += `${nameA} dealt ${damage} damage to ${nameB}!\n`;
-
     this.gameText.setDescription(text);
+
+    if (teamB.player.hp <= 0) {
+      throw new EndGameError();
+    }
   }
 
   private async updateGameText() {
@@ -270,6 +281,13 @@ export class Game {
           await sleep(this.interval)
           continue;
         } else if (err instanceof EndGameError) {
+          await this.updateGameText();
+          await sleep(this.interval)
+
+          this.gameText.setDescription(err.message);
+          await this.updateGameText();
+          await sleep(this.interval);
+
           break;
         }
       } finally {
