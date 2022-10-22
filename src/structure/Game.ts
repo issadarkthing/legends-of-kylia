@@ -74,6 +74,11 @@ export class Game {
   }
 
   private async getAttackType(player: Player) {
+
+    if (player.isBot) {
+      return random.pick(["Melee", "Ranged"] as Attack[]);
+    }
+
     const button = new ButtonHandler(
       this.i, 
       `${player.mention} Please select an attack type`,
@@ -197,7 +202,7 @@ export class Game {
     this.gameText.setDescription(text);
   }
 
-  private async runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
+  private runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Damage Phase__**\n";
     let damage = 0;
     let attackDamage = 0;

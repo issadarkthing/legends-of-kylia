@@ -10,6 +10,7 @@ export class Player {
   isBot = false;
   coin = 0;
   xp = 0;
+  static INITIAL_POINTS = 10;
 
   description = "";
   imageUrl = "";
