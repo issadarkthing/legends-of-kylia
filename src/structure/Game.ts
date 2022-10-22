@@ -67,7 +67,7 @@ export class Game {
   private playerShow(team: Team) {
     const embed = team.player.show();
     embed.addFields([
-      { name: "**----**", value: progressBar(team.player.hp, team.initialHP) }
+      { name: "\u200b", value: progressBar(team.player.hp, team.initialHP) }
     ])
 
     return embed;
