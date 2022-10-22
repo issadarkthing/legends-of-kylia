@@ -30,7 +30,7 @@ interface Team {
 }
 
 export class Game {
-  private interval: number = time.SECOND * 3;
+  private interval: number = time.SECOND * 5;
   private i: CommandInteraction;
   private teamA: Team;
   private teamB: Team;
@@ -68,7 +68,7 @@ export class Game {
   private async getAttackType(player: Player) {
     const button = new ButtonHandler(
       this.i, 
-      "Please select an attack type",
+      `${player.mention} Please select an attack type`,
       player.id,
     );
 
@@ -147,15 +147,15 @@ export class Game {
       let totalRollA = rollA + modifierA;
       text += this.createRollText(teamA, rollA, modifierA);
 
-      if (canReroll) {
+      if (totalRollB > totalRollA && canReroll) {
         rollA = this.roll();
         totalRollA = rollA + teamA.player.melee;
-        text += `${nameA} re-rolled and got ${rollA} + ${teamA.player.melee} = ${totalRollA}\n`;
+        text += `${nameB} rolled higher thus ${nameA} re-rolled and got ${totalRollA}\n`
       }
 
       if (rollA === 20) {
         teamA.attackCount += 1;   
-        text += `${nameA} got nat 20 and receives 2 chances in damage phase\n`;
+        text += `${nameA} got nat 20 and receives 2 attacks in damage phase\n`;
       }
 
       // initiate counter
@@ -252,7 +252,7 @@ export class Game {
 
     this.gameText = new EmbedBuilder()
       .setColor("Random")
-      .setDescription("Fight!");
+      .setDescription("Preparing battle");
 
     while (true) {
 
