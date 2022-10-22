@@ -236,6 +236,7 @@ export class Game {
     ];
 
     await this.i.editReply({ embeds });
+    await sleep(this.interval);
   }
 
   private async startRound(teamA: Team, teamB: Team) {
@@ -245,17 +246,14 @@ export class Game {
     // ready phase
     this.runReadyPhase(attackType, teamA, teamB);
     await this.updateGameText();
-    await sleep(this.interval);
 
     // attack phase
     this.runAttackPhase(attackType, teamA, teamB);
     await this.updateGameText();
-    await sleep(this.interval);
 
     // damage phase
     this.runDamagePhase(attackType, teamA, teamB);
     await this.updateGameText();
-    await sleep(this.interval);
   }
 
   async run() {
@@ -278,15 +276,12 @@ export class Game {
           throw new CommandError(err.message);
         } else if (err instanceof EndRoundError) {
           await this.updateGameText();
-          await sleep(this.interval)
           continue;
         } else if (err instanceof EndGameError) {
           await this.updateGameText();
-          await sleep(this.interval)
 
           this.gameText.setDescription(err.message);
           await this.updateGameText();
-          await sleep(this.interval);
 
           break;
         }
