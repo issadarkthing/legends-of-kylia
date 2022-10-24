@@ -99,9 +99,43 @@ export class Game {
     return attack;
   }
 
-  private createRollText(team: Team, roll: number, modifier: number) {
-    const totalRoll = roll + modifier;
-    return `${team.player.mention} rolled ${roll} + ${modifier} = ${totalRoll}\n`;
+  private createRollText(team: Team, roll: number, modifier?: number) {
+    const totalRoll = roll + (modifier || 0);
+    if (!modifier) return `${team.player.mention} rolled **${roll}**\n`;
+    return `${team.player.mention} rolled ${roll} + ${modifier} = **${totalRoll}**\n`;
+  }
+
+  private async runPreGame(): Promise<[Team, Team]> {
+    let text = "**__Pre-game__**\n";
+
+    const rollA = this.roll();
+    text += this.createRollText(this.teamA, rollA);
+
+    const rollB = this.roll();
+    text += this.createRollText(this.teamB, rollB);
+
+    if (rollA === rollB) {
+      text += `Result is a tie, rerolling...\n`;
+      this.gameText.setDescription(text);
+      await this.updateGameText();
+
+      return this.runPreGame();
+    }
+
+    let order!: [Team, Team];
+
+    if (rollA > rollB) {
+      text += `${this.teamA.player.mention} rolled higher and makes the first move\n`;
+      order = [this.teamA, this.teamB];
+    } else if (rollB > rollA) {
+      text += `${this.teamB.player.mention} rolled higher and makes the first move\n`;
+      order = [this.teamB, this.teamA];
+    }
+
+    this.gameText.setDescription(text);
+    await this.updateGameText();
+
+    return order;
   }
 
   private runReadyPhase(attackType: Attack, teamA: Team, teamB: Team) {
@@ -262,11 +296,12 @@ export class Game {
   }
 
   async run() {
-    const teams = [this.teamA, this.teamB];
-
     this.gameText = new EmbedBuilder()
       .setColor("Random")
       .setDescription("Preparing battle");
+
+    const teams = await this.runPreGame();
+
 
     while (true) {
 
