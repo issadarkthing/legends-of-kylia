@@ -1,5 +1,6 @@
+import { ButtonHandler } from "@jiman24/discordjs-button";
 import { Command, CommandError } from "@jiman24/slash-commandment";
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { Player } from "../structure/Player";
 
 export default class extends Command {
@@ -24,6 +25,26 @@ export default class extends Command {
     )
   }
 
+  private async getStat(i: CommandInteraction, player: Player, statCount: number) {
+    const options = ["Speed", "Melee", "Ranged", "Defense"] as const;
+    const embed = new EmbedBuilder()
+      .setColor("Random")
+      .setDescription(`Please select stat to be spent on. Remaining stat: **${statCount}**`);
+    
+    const button = new ButtonHandler(i, [player.show(), embed]);
+
+    let stat!: "speed" | "melee" | "defense" | "ranged";
+
+    for (const option of options) {
+      //@ts-ignore
+      button.addButton(option, () => stat = option.toLowerCase());
+    }
+
+    await button.run();
+
+    return stat;
+  }
+
   async exec(i: CommandInteraction) {
     await i.deferReply({ ephemeral: true });
     const userID = i.user.id;
@@ -39,6 +60,14 @@ export default class extends Command {
 
     player.description = description;
     player.imageUrl = imageUrl;
+
+    const statPoints = 10;
+
+    for (let point = statPoints; point > 0; point--) {
+      const stat = await this.getStat(i, player, point);
+
+      player[stat]++;
+    }
 
     await player.save();
 
