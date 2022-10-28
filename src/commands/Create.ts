@@ -70,12 +70,34 @@ export default class extends Command {
     player.description = description;
     player.imageUrl = imageUrl;
 
-    const statPoints = 10;
 
-    for (let point = statPoints; point > 0; point--) {
-      const stat = await this.getStat(i, player, point);
+    while (true) {
+      player.speed = 0;
+      player.melee = 0;
+      player.ranged = 0;
+      player.defense = 0;
+      const statPoints = 10;
 
-      player[stat]++;
+      for (let point = statPoints; point > 0; point--) {
+        const stat = await this.getStat(i, player, point);
+
+        player[stat]++;
+      }
+
+      const prompt = new EmbedBuilder()
+        .setColor("Random")
+        .setDescription("Are you sure with the attributes?");
+
+      const confirmation = new ButtonHandler(i, [player.show(), prompt]);
+
+      let confirm = false;
+
+      confirmation.addButton("Confirm", () => { confirm = true });
+      confirmation.addButton("Decline", () => { confirm = false });
+
+      await confirmation.run();
+
+      if (confirm) break;
     }
 
     await player.save();
