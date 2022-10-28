@@ -12,7 +12,7 @@ export class UnresponsiveError extends Error {
   constructor(player: Player) {
     super();
     this.player = player;
-    this.message = `${player.mention} is unresponsive`;
+    this.message = `${player.name} is unresponsive`;
   }
 }
 
@@ -26,7 +26,7 @@ class EndGameError extends Error {
   constructor(player: Player) {
     super();
     this.player = player;
-    this.message = `${player.mention} won the battle!`;
+    this.message = `${player.name} won the battle!`;
   }
 }
 
@@ -79,11 +79,12 @@ export class Game {
       return random.pick(["Melee", "Ranged"] as Attack[]);
     }
 
-    const button = new ButtonHandler(
-      this.i, 
-      `${player.mention} Please select an attack type`,
-      player.id,
-    );
+    const embed = new EmbedBuilder()
+      .setColor("Random")
+      .setThumbnail(player.imageUrl)
+      .setDescription(`${player.name}, please select an attack type`);
+
+    const button = new ButtonHandler(this.i, embed, player.id);
 
     let attack!: Attack;
 
@@ -101,8 +102,8 @@ export class Game {
 
   private createRollText(team: Team, roll: number, modifier?: number) {
     const totalRoll = roll + (modifier || 0);
-    if (!modifier) return `${team.player.mention} rolled **${roll}**\n`;
-    return `${team.player.mention} rolled ${roll} + ${modifier} = **${totalRoll}**\n`;
+    if (!modifier) return `${team.player.name} rolled **${roll}**\n`;
+    return `${team.player.name} rolled ${roll} + ${modifier} = **${totalRoll}**\n`;
   }
 
   private async runPreGame(): Promise<[Team, Team]> {
@@ -125,10 +126,10 @@ export class Game {
     let order!: [Team, Team];
 
     if (rollA > rollB) {
-      text += `${this.teamA.player.mention} rolled higher and makes the first move\n`;
+      text += `${this.teamA.player.name} rolled higher and makes the first move\n`;
       order = [this.teamA, this.teamB];
     } else if (rollB > rollA) {
-      text += `${this.teamB.player.mention} rolled higher and makes the first move\n`;
+      text += `${this.teamB.player.name} rolled higher and makes the first move\n`;
       order = [this.teamB, this.teamA];
     }
 
@@ -141,13 +142,13 @@ export class Game {
   private runReadyPhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Ready Phase__**\n";
 
-    const nameA = teamA.player.mention;
+    const nameA = teamA.player.name;
     const rollA = this.roll();
     const modifierA = teamA.player.speed;
     const totalRollA = rollA + modifierA;
     text += this.createRollText(teamA, rollA, modifierA);
 
-    const nameB = teamB.player.mention;
+    const nameB = teamB.player.name;
     const rollB = this.roll();
     const modifierB = teamB.player.speed;
     const totalRollB = rollB + modifierB;
@@ -178,10 +179,10 @@ export class Game {
   private runAttackPhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Attack Phase__**\n";
 
-    const nameA = teamA.player.mention;
+    const nameA = teamA.player.name;
     let rollA = this.roll();
 
-    const nameB = teamB.player.mention;
+    const nameB = teamB.player.name;
     const rollB = this.roll();
     const modifierB = teamB.player.defense;
     const totalRollB = rollB + modifierB;
@@ -241,8 +242,8 @@ export class Game {
     let damage = 0;
     let attackDamage = 0;
 
-    const nameA = teamA.player.mention;
-    const nameB = teamB.player.mention;
+    const nameA = teamA.player.name;
+    const nameB = teamB.player.name;
 
     if (attackType === "Melee") {
       attackDamage = teamA.player.melee;

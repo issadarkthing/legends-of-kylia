@@ -43,8 +43,9 @@ export default class extends Command {
     }
 
     const prompt = new EmbedBuilder()
+      .setThumbnail(playerA.imageUrl)
       .setColor("Random")
-      .setDescription(`${playerA.mention} invited ${playerB.mention} to a battle. Do you accept?`);
+      .setDescription(`${playerA.name} invited ${playerB.name} to a battle. Do you accept? ${playerB.mention}`);
     const confirmation = new ButtonHandler(i, [playerA.show(), prompt], user.id);
 
     let inviteAccepted = false;
