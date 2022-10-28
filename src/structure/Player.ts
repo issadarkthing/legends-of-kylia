@@ -12,6 +12,7 @@ export class Player {
   xp = 0;
   static INITIAL_POINTS = 10;
 
+  name = "";
   description = "";
   imageUrl = "";
   speed = 0;
@@ -65,6 +66,7 @@ export class Player {
       .setColor("Random")
       .setThumbnail(this.imageUrl)
       .setDescription(this.description)
+      .setTitle(this.name)
       .addFields([
         { name: "Speed", value: code(this.speed), inline: true },
         { name: "Melee", value: code(this.melee), inline: true },

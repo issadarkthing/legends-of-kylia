@@ -12,6 +12,13 @@ export default class extends Command {
 
     this.addStringOption(option =>
       option
+        .setName("name")
+        .setDescription("Sets the player name")
+        .setRequired(true)
+    )
+
+    this.addStringOption(option =>
+      option
         .setName("description")
         .setDescription("Sets short description for your character")
         .setRequired(true)
@@ -54,10 +61,12 @@ export default class extends Command {
       throw new CommandError("You've already created a character");
     } catch {}
 
+    const name = i.options.get("name", true).value as string;
     const description = i.options.get("description", true).value as string;
     const imageUrl = i.options.get("image_url", true).attachment?.url as string;
     const player = new Player(userID);
 
+    player.name = name;
     player.description = description;
     player.imageUrl = imageUrl;
 
