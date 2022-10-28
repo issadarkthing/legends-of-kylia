@@ -56,7 +56,7 @@ export default class extends Command {
       await confirmation.run();
     }
 
-    if (!inviteAccepted) {
+    if (!inviteAccepted && !playerB.isBot) {
       throw new CommandError(`${playerB.mention} rejected the battle invitation`);
     }
 
