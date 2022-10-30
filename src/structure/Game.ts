@@ -3,6 +3,9 @@ import { progressBar, random, sleep, time } from "@jiman24/discordjs-utils";
 import { CommandError } from "@jiman24/slash-commandment";
 import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { Player } from "./Player";
+    
+const ROLLING_INTERVAL = time.SECOND / 2;
+const ROUND_INTERVAL = time.SECOND / 8;
 
 type Attack = "Melee" | "Ranged";
 
@@ -93,7 +96,6 @@ export class Game {
 
     await this.updateGameText(`${player.name} is rolling a dice`);
 
-    const ROLLING_INTERVAL = 500;
     await sleep(ROLLING_INTERVAL);
 
     if (!roll) {
@@ -292,12 +294,20 @@ export class Game {
       attackDamage = teamA.player.ranged;
     }
 
+    text += `${attackDamage}`;
+
     for (let i = 0; i < teamA.attackCount; i++) {
-      damage += this.roll() + attackDamage;
+      const roll = await this.runRollAnimation(teamA.player, `Rolling to determine damage`);
+      text += ` + ${roll}`;
+      damage += roll;
     }
 
+    text += ` = ${damage}\n`;
+
     if (attackType === "Ranged") {
+      const initialDamage = damage;
       damage = Math.floor(damage / 2);
+      text += `Ranged attack damage: ${initialDamage} / 2 = ${damage}\n`
     }
 
     teamB.player.hp -= damage;
@@ -362,6 +372,9 @@ export class Game {
         }
       } finally {
         teams.reverse();
+
+        await this.updateGameText("Preparing for new round...");
+        await sleep(ROUND_INTERVAL);
       }
     }
   }
