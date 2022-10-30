@@ -74,6 +74,8 @@ export class Game {
     const embed = new EmbedBuilder()
       .setColor("Random")
       .setDescription(message)
+      .setThumbnail(player.imageUrl)
+      .setTitle(player.name)
 
     const button = new ButtonHandler(this.i, 
       [ 
@@ -89,7 +91,7 @@ export class Game {
 
     await button.run();
 
-    await this.updateGameText(`Rolling...`);
+    await this.updateGameText(`${player.name} is rolling a dice`);
 
     const ROLLING_INTERVAL = 500;
     await sleep(ROLLING_INTERVAL);
@@ -146,8 +148,9 @@ export class Game {
   }
 
   private async runPreGame(): Promise<[Team, Team]> {
-    const rollA = await this.runRollAnimation(this.teamA.player, "Determining order");
-    const rollB = await this.runRollAnimation(this.teamB.player, "Determining order");
+    const rollText = "Roll the dice to determine order";
+    const rollA = await this.runRollAnimation(this.teamA.player, rollText);
+    const rollB = await this.runRollAnimation(this.teamB.player, rollText);
     
     let text = "**__Pre-game__**\n";
     text += `${this.teamA.player.name} rolled ${rollA}!\n`;
