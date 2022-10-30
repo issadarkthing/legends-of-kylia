@@ -64,6 +64,28 @@ export class Game {
     return random.integer(1, 20);
   }
 
+  private async runRollAnimation(player: Player, message: string) {
+    const embed = new EmbedBuilder()
+      .setColor("Random")
+      .setDescription(message)
+
+    const button = new ButtonHandler(this.i, [embed]);
+
+    let roll;
+
+    button.addButton("Roll", () => { roll = this.roll() });
+
+    await button.run();
+
+    if (!roll) {
+      throw new UnresponsiveError(player);
+    }
+
+    this.gameText.setDescription(`${player.name} rolled ${roll}!`);
+
+    return roll;
+  }
+
   private playerShow(team: Team) {
     const embed = team.player.show();
     embed.addFields([
@@ -271,8 +293,8 @@ export class Game {
   private async updateGameText() {
     const embeds = [
       this.playerShow(this.teamA),
-      this.gameText,
       this.playerShow(this.teamB),
+      this.gameText,
     ];
 
     await this.i.editReply({ embeds });
