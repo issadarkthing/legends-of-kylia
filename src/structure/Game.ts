@@ -186,15 +186,16 @@ export class Game {
     const totalRollA = rollA + modifierA;
     text += this.createRollText(teamA, rollA, modifierA);
 
-    const nameB = teamB.player.name;
-    const rollB = await this.runRollAnimation(teamB.player, 
-      `${teamB.player.name} is rolling for speed`
-    );
-    const modifierB = teamB.player.speed;
-    const totalRollB = rollB + modifierB;
-    text += this.createRollText(teamB, rollB, modifierB);
 
     if (attackType === "Melee") {
+      const nameB = teamB.player.name;
+      const rollB = await this.runRollAnimation(teamB.player, 
+        `${teamB.player.name} is rolling for speed`
+      );
+      const modifierB = teamB.player.speed;
+      const totalRollB = rollB + modifierB;
+      text += this.createRollText(teamB, rollB, modifierB);
+
       if (rollA === 20) {
         teamA.attackCount += 1;
         text += `${nameA} got nat 20 and receives 2 chances in attack phase\n`;
