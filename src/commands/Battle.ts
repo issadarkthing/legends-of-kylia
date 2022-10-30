@@ -38,6 +38,7 @@ export default class extends Command {
         playerB[stat]++;
       }
 
+      playerB.name = "Bot";
       playerB.description = "Bot";
       playerB.imageUrl = user.displayAvatarURL();
     }

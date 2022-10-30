@@ -42,7 +42,6 @@ export class Game {
   private i: CommandInteraction;
   private teamA: Team;
   private teamB: Team;
-  private gameText!: EmbedBuilder;
 
   constructor(i: CommandInteraction, a: Player, b: Player) {
     this.i = i;
@@ -65,23 +64,31 @@ export class Game {
   }
 
   private async runRollAnimation(player: Player, message: string) {
+    if (player.isBot) {
+      const roll = this.roll();
+      await this.updateGameText(`${player.name} rolled ${roll}`);
+
+      return roll;
+    }
+
     const embed = new EmbedBuilder()
       .setColor("Random")
       .setDescription(message)
 
     const button = new ButtonHandler(this.i, [embed]);
 
-    let roll;
+    let roll!: number;
 
     button.addButton("Roll", () => { roll = this.roll() });
 
     await button.run();
+    await sleep(this.interval);
 
     if (!roll) {
       throw new UnresponsiveError(player);
     }
 
-    this.gameText.setDescription(`${player.name} rolled ${roll}!`);
+    await this.updateGameText(`${player.name} rolled ${roll}!`);
 
     return roll;
   }
@@ -129,18 +136,16 @@ export class Game {
   }
 
   private async runPreGame(): Promise<[Team, Team]> {
+    const rollA = await this.runRollAnimation(this.teamA.player, "Determining order");
+    const rollB = await this.runRollAnimation(this.teamB.player, "Determining order");
+    
     let text = "**__Pre-game__**\n";
-
-    const rollA = this.roll();
-    text += this.createRollText(this.teamA, rollA);
-
-    const rollB = this.roll();
-    text += this.createRollText(this.teamB, rollB);
+    text += `${this.teamA.player.name} rolled ${rollA}!\n`;
+    text += `${this.teamB.player.name} rolled ${rollB}!\n`;
 
     if (rollA === rollB) {
       text += `Result is a tie, rerolling...\n`;
-      this.gameText.setDescription(text);
-      await this.updateGameText();
+      await this.updateGameText(text);
 
       return this.runPreGame();
     }
@@ -155,13 +160,12 @@ export class Game {
       order = [this.teamB, this.teamA];
     }
 
-    this.gameText.setDescription(text);
-    await this.updateGameText();
+    await this.updateGameText(text);
 
     return order;
   }
 
-  private runReadyPhase(attackType: Attack, teamA: Team, teamB: Team) {
+  private async runReadyPhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Ready Phase__**\n";
 
     const nameA = teamA.player.name;
@@ -184,21 +188,19 @@ export class Game {
 
       if (totalRollB > totalRollA) {
         text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
-        this.gameText.setDescription(text);
-        throw new EndRoundError();
+        throw new EndRoundError(text);
       }
     } else if (attackType === "Ranged") {
       if (totalRollA <= 10) {
         text += `${nameA} rolled lower than 10 thus neutral is reset\n`;
-        this.gameText.setDescription(text);
-        throw new EndRoundError();
+        throw new EndRoundError(text);
       }
     }
 
-    this.gameText.setDescription(text);
+    await this.updateGameText(text);
   }
 
-  private runAttackPhase(attackType: Attack, teamA: Team, teamB: Team) {
+  private async runAttackPhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Attack Phase__**\n";
 
     const nameA = teamA.player.name;
@@ -251,15 +253,14 @@ export class Game {
 
       if (totalRollB > totalRollA) {
         text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
-        this.gameText.setDescription(text);
-        throw new EndRoundError();
+        throw new EndRoundError(text);
       }
     }
     
-    this.gameText.setDescription(text);
+    await this.updateGameText(text);
   }
 
-  private runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
+  private async runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Damage Phase__**\n";
     let damage = 0;
     let attackDamage = 0;
@@ -283,18 +284,22 @@ export class Game {
 
     teamB.player.hp -= damage;
     text += `${nameA} dealt ${damage} damage to ${nameB}!\n`;
-    this.gameText.setDescription(text);
+    await this.updateGameText(text);
 
     if (teamB.player.hp <= 0) {
       throw new EndGameError(teamA.player);
     }
   }
 
-  private async updateGameText() {
+  private async updateGameText(message: string) {
+    const gameText = new EmbedBuilder()
+      .setColor("Random")
+      .setDescription(message);
+
     const embeds = [
       this.playerShow(this.teamA),
       this.playerShow(this.teamB),
-      this.gameText,
+      gameText,
     ];
 
     await this.i.editReply({ embeds });
@@ -306,25 +311,18 @@ export class Game {
     const attackType = await this.getAttackType(teamA.player);
 
     // ready phase
-    this.runReadyPhase(attackType, teamA, teamB);
-    await this.updateGameText();
+    await this.runReadyPhase(attackType, teamA, teamB);
 
     // attack phase
-    this.runAttackPhase(attackType, teamA, teamB);
-    await this.updateGameText();
+    await this.runAttackPhase(attackType, teamA, teamB);
 
     // damage phase
-    this.runDamagePhase(attackType, teamA, teamB);
-    await this.updateGameText();
+    await this.runDamagePhase(attackType, teamA, teamB);
   }
 
   async run() {
-    this.gameText = new EmbedBuilder()
-      .setColor("Random")
-      .setDescription("Preparing battle");
 
     const teams = await this.runPreGame();
-
 
     while (true) {
 
@@ -338,14 +336,10 @@ export class Game {
         if (err instanceof UnresponsiveError) {
           throw new CommandError(err.message);
         } else if (err instanceof EndRoundError) {
-          await this.updateGameText();
+          await this.updateGameText(err.message);
           continue;
         } else if (err instanceof EndGameError) {
-          await this.updateGameText();
-
-          this.gameText.setDescription(err.message);
-          await this.updateGameText();
-
+          await this.updateGameText(err.message);
           break;
         }
       } finally {
