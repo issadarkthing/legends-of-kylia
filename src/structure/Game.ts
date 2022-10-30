@@ -75,14 +75,24 @@ export class Game {
       .setColor("Random")
       .setDescription(message)
 
-    const button = new ButtonHandler(this.i, [embed]);
+    const button = new ButtonHandler(this.i, 
+      [ 
+        this.playerShow(this.teamA), 
+        this.playerShow(this.teamB),
+        embed,
+      ]
+    );
 
     let roll!: number;
 
     button.addButton("Roll", () => { roll = this.roll() });
 
     await button.run();
-    await sleep(this.interval);
+
+    await this.updateGameText(`Rolling...`);
+
+    const ROLLING_INTERVAL = 500;
+    await sleep(ROLLING_INTERVAL);
 
     if (!roll) {
       throw new UnresponsiveError(player);
@@ -169,13 +179,17 @@ export class Game {
     let text = "**__Ready Phase__**\n";
 
     const nameA = teamA.player.name;
-    const rollA = this.roll();
+    const rollA = await this.runRollAnimation(teamA.player, 
+      `${teamA.player.name} is rolling for speed`
+    );
     const modifierA = teamA.player.speed;
     const totalRollA = rollA + modifierA;
     text += this.createRollText(teamA, rollA, modifierA);
 
     const nameB = teamB.player.name;
-    const rollB = this.roll();
+    const rollB = await this.runRollAnimation(teamB.player, 
+      `${teamB.player.name} is rolling for speed`
+    );
     const modifierB = teamB.player.speed;
     const totalRollB = rollB + modifierB;
     text += this.createRollText(teamB, rollB, modifierB);
@@ -204,10 +218,10 @@ export class Game {
     let text = "**__Attack Phase__**\n";
 
     const nameA = teamA.player.name;
-    let rollA = this.roll();
+    let rollA = await this.runRollAnimation(teamA.player, `${nameA} Rolling for attack`);
 
     const nameB = teamB.player.name;
-    const rollB = this.roll();
+    const rollB = await this.runRollAnimation(teamB.player, `${nameB} Rolling for defense`);
     const modifierB = teamB.player.defense;
     const totalRollB = rollB + modifierB;
     text += this.createRollText(teamB, rollB, modifierB);
@@ -220,7 +234,7 @@ export class Game {
       text += this.createRollText(teamA, rollA, modifierA);
 
       if (totalRollB > totalRollA && canReroll) {
-        rollA = this.roll();
+        rollA = await this.runRollAnimation(teamA.player, `${nameA} is able to re-roll in attempt to get higher roll`)
         totalRollA = rollA + teamA.player.melee;
         text += `${nameB} rolled higher thus ${nameA} re-rolled and got ${totalRollA}\n`
       }
@@ -232,7 +246,7 @@ export class Game {
 
       // initiate counter
       if (totalRollA < totalRollB) {
-        const counterResult = this.roll();
+        const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
 
         if (counterResult >= 11) {
           teamB.counter = true;
@@ -246,8 +260,8 @@ export class Game {
       text += this.createRollText(teamA, rollA, modifierA);
 
       if (totalRollB > totalRollA && canReroll) {
-        rollA = this.roll();
-        totalRollA = rollA + teamA.player.ranged;
+        rollA = await this.runRollAnimation(teamA.player, `${nameA} is able to re-roll in attempt to get higher roll`)
+        totalRollA = rollA + teamA.player.melee;
         text += `${nameB} rolled higher thus ${nameA} re-rolled and got ${totalRollA}\n`
       }
 
