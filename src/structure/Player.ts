@@ -51,7 +51,7 @@ export class Player {
     const data = await client.players.get(id);
 
     if (!data) {
-      throw new CommandError("Unregistered user. Please use `/start` command");
+      throw new CommandError("Unregistered user. Please use `/create` command");
     }
 
     const player = new Player(id);
