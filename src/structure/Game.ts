@@ -3,18 +3,17 @@ import { progressBar, random, sleep, time } from "@jiman24/discordjs-utils";
 import { CommandError } from "@jiman24/slash-commandment";
 import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { Player } from "./Player";
+import { PlayerError } from "./Error";
     
 const ROLLING_INTERVAL = time.SECOND / 2;
 const ROUND_INTERVAL = time.SECOND / 8;
 
 type Attack = "Melee" | "Ranged";
 
-export class UnresponsiveError extends Error {
-  player: Player;
-
+// error thrown when player ins unresponsive
+export class UnresponsiveError extends PlayerError {
   constructor(player: Player) {
-    super();
-    this.player = player;
+    super(player);
     this.message = `${player.name} is unresponsive`;
   }
 }
@@ -23,21 +22,24 @@ export class UnresponsiveError extends Error {
 class EndRoundError extends Error {}
 
 // error thrown when the game ended
-class EndGameError extends Error {
-  player: Player;
-
+class EndGameError extends PlayerError {
   constructor(player: Player) {
-    super();
-    this.player = player;
+    super(player);
     this.message = `${player.name} won the battle!`;
   }
 }
+
+// error thrown when counter is initiated
+class CounterInitiatedError extends PlayerError {}
+
+// error thrown when consecutive attack happens
+class ConsecutiveError extends PlayerError {}
 
 interface Team {
   player: Player;
   initialHP: number;
   attackCount: number;
-  counter: boolean;
+  consecutive: 0,
 }
 
 export class Game {
@@ -52,13 +54,13 @@ export class Game {
       player: a,
       initialHP: a.hp,
       attackCount: 1,
-      counter: false,
+      consecutive: 0,
     }
     this.teamB = {
       player: b,
       initialHP: b.hp,
       attackCount: 1,
-      counter: false,
+      consecutive: 0,
     }
   }
 
@@ -255,8 +257,9 @@ export class Game {
         const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
 
         if (counterResult >= 11) {
-          teamB.counter = true;
-          text += `${nameB} rolled higher than ${nameA} and countered successfully\n`;
+          text += `${nameB} rolled higher than ${nameA} and counters\n`;
+          await this.updateGameText(text);
+          throw new CounterInitiatedError(teamB.player);
         }
       }
 
@@ -295,9 +298,21 @@ export class Game {
     }
 
     text += `${attackDamage}`;
+    let isConsecutive = false;
 
     for (let i = 0; i < teamA.attackCount; i++) {
       const roll = await this.runRollAnimation(teamA.player, `Rolling to determine damage`);
+        
+      if (roll === 20) {
+        teamA.consecutive++;
+
+        if (teamA.consecutive < 3) {
+          isConsecutive = true;
+        } else if (teamA.consecutive === 3) {
+          teamA.consecutive = 0;
+        }
+      }
+
       text += ` + ${roll}`;
       damage += roll;
     }
@@ -312,10 +327,19 @@ export class Game {
 
     teamB.player.hp -= damage;
     text += `${nameA} dealt ${damage} damage to ${nameB}!\n`;
+
+    if (isConsecutive) {
+      text += `${nameA} rolled a 20 thus ${nameB}'s turn is skipped`;
+    }
+
     await this.updateGameText(text);
 
     if (teamB.player.hp <= 0) {
       throw new EndGameError(teamA.player);
+    }
+
+    if (isConsecutive) {
+      throw new ConsecutiveError(teamA.player);
     }
   }
 
@@ -369,7 +393,31 @@ export class Game {
         } else if (err instanceof EndGameError) {
           await this.updateGameText(err.message);
           break;
+        } else if (err instanceof ConsecutiveError) {
+          teams.reverse();
+        } else if (err instanceof CounterInitiatedError) {
+          const { player } = err;
+          const [teamA, teamB] = player.id === this.teamA.player.id ? 
+            [this.teamA, this.teamB] : [this.teamB, this.teamA];
+
+          try {
+            await this.runAttackPhase("Melee", teamA, teamB);
+            await this.runDamagePhase("Melee", teamA, teamB);
+          } catch (e) {
+            const err = e as Error;
+
+            if (err instanceof UnresponsiveError) {
+              throw new CommandError(err.message);
+            } else if (err instanceof EndRoundError) {
+              await this.updateGameText(err.message);
+              continue;
+            } else if (err instanceof EndGameError) {
+              await this.updateGameText(err.message);
+              break;
+            }
+          }
         }
+
       } finally {
         teams.reverse();
 
