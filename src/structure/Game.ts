@@ -357,9 +357,9 @@ export class Game {
       text += `${nameA} rolled a 20 thus ${nameB}'s turn is skipped`;
     }
 
-    await this.updateGameText(text);
-
     teamB.player.hp -= damage;
+
+    await this.updateGameText(text);
 
     if (teamB.player.hp <= 0) {
       throw new EndGameError(teamA.player);
