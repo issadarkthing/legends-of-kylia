@@ -359,6 +359,8 @@ export class Game {
 
     await this.updateGameText(text);
 
+    teamB.player.hp -= damage;
+
     if (teamB.player.hp <= 0) {
       throw new EndGameError(teamA.player);
     }
