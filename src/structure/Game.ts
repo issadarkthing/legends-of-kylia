@@ -224,7 +224,12 @@ export class Game {
     await this.updateGameText(text);
   }
 
-  private async runAttackPhase(attackType: Attack, teamA: Team, teamB: Team) {
+  private async runAttackPhase(
+    attackType: Attack, 
+    teamA: Team, 
+    teamB: Team,
+    counter = false,
+  ) {
     let text = "**__Attack Phase__**\n";
 
     const nameA = teamA.player.name;
@@ -288,7 +293,12 @@ export class Game {
     await this.updateGameText(text);
   }
 
-  private async runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
+  private async runDamagePhase(
+    attackType: Attack, 
+    teamA: Team, 
+    teamB: Team, 
+    counter = false,
+  ) {
     let text = "**__Damage Phase__**\n";
     let damage = 0;
 
@@ -303,16 +313,21 @@ export class Game {
 
     text += `${damage}`;
     let isConsecutive = false;
+    let rolled20 = false;
 
     for (let i = 0; i < teamA.attackCount; i++) {
       const roll = await this.runRollAnimation(teamA.player, `Rolling to determine damage`);
+
+      if (!rolled20 && roll === 20) {
+        rolled20 = true;
+      }
         
-      if (roll === 20) {
+      if (rolled20) {
         teamA.consecutive++;
 
         if (teamA.consecutive < 3) {
           isConsecutive = true;
-        } else if (teamA.consecutive === 3) {
+        } else if (teamA.consecutive >= 3) {
           teamA.consecutive = 0;
         }
       }
@@ -326,7 +341,13 @@ export class Game {
     if (attackType === "Ranged") {
       const initialDamage = damage;
       damage = Math.floor(damage / 2);
-      text += `Ranged attack damage: ${initialDamage} / 2 = ${damage}\n`
+      text += `Total attack damage: ${initialDamage} / 2 = ${damage}\n`
+    }
+
+    if (counter && !rolled20) {
+      const initialDamage = damage;
+      damage = Math.floor(damage / 2);
+      text += `Total attack damage: ${initialDamage} / 2 = ${damage}\n`
     }
 
     teamB.player.hp -= damage;
@@ -405,8 +426,8 @@ export class Game {
             [this.teamA, this.teamB] : [this.teamB, this.teamA];
 
           try {
-            await this.runAttackPhase("Melee", teamA, teamB);
-            await this.runDamagePhase("Melee", teamA, teamB);
+            await this.runAttackPhase("Melee", teamA, teamB, true);
+            await this.runDamagePhase("Melee", teamA, teamB, true);
           } catch (e) {
             const err = e as Error;
 
