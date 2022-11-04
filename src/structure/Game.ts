@@ -260,7 +260,7 @@ export class Game {
       }
 
       // initiate counter
-      if (totalRollA < totalRollB) {
+      if (totalRollA < totalRollB && teamB.consecutive < 3) {
         const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
 
         if (counterResult >= 11) {
