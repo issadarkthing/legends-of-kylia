@@ -246,7 +246,6 @@ export class Game {
     if (attackType === "Melee") {
       const modifierA = teamA.player.melee;
       let totalRollA = rollA + modifierA;
-      text += this.createRollText(teamA, rollA, modifierA);
 
       if (totalRollB > totalRollA && canReroll) {
         rollA = await this.runRollAnimation(teamA.player, `${nameA} is able to re-roll in attempt to get higher roll`)
@@ -264,13 +263,15 @@ export class Game {
         const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
 
         if (counterResult >= 11) {
-          text += `${nameB} rolled higher than ${nameA} and counters\n`;
+          text += `(${rollB} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
           await this.updateGameText(text);
           throw new CounterInitiatedError(teamB.player);
         } else {
-          text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
+          text += `(${rollB} + ${teamB.player.speed}) < 11 The counter has failed`;
           throw new EndRoundError(text);
         }
+      } else {
+        text += this.createRollText(teamA, rollA, modifierA);
       }
 
     } else if (attackType === "Ranged") {
@@ -314,6 +315,7 @@ export class Game {
     text += `${damage}`;
     let isConsecutive = false;
     let rolled20 = false;
+    const rolls = [];
 
     for (let i = 0; i < teamA.attackCount; i++) {
       const roll = await this.runRollAnimation(teamA.player, `Rolling to determine damage`);
@@ -334,6 +336,7 @@ export class Game {
 
       text += ` + ${roll}`;
       damage += roll;
+      rolls.push(roll);
     }
 
     text += ` = ${damage}\n`;
@@ -345,13 +348,12 @@ export class Game {
     }
 
     if (counter && !rolled20) {
-      const initialDamage = damage;
       damage = Math.floor(damage / 2);
-      text += `Total attack damage: ${initialDamage} / 2 = ${damage}\n`
+      text += `((${rolls.join(" + ")} + ${teamA.player.melee})/2) done to ${teamB.player.name}'s health\n`
     }
 
     teamB.player.hp -= damage;
-    text += `${nameA} dealt ${damage} damage to ${nameB}!\n`;
+    text += `((${rolls.join(" + ")} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
 
     if (isConsecutive) {
       text += `${nameA} rolled a 20 thus ${nameB}'s turn is skipped`;
