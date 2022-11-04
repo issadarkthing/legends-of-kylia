@@ -82,12 +82,14 @@ export class Game {
       .setThumbnail(player.imageUrl)
       .setTitle(player.name)
 
-    const button = new ButtonHandler(this.i, 
+    const button = new ButtonHandler(
+      this.i, 
       [ 
         this.playerShow(this.teamA), 
         this.playerShow(this.teamB),
         embed,
-      ]
+      ],
+      player.id,
     );
 
     let roll!: number;
