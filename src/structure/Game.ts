@@ -262,6 +262,9 @@ export class Game {
           text += `${nameB} rolled higher than ${nameA} and counters\n`;
           await this.updateGameText(text);
           throw new CounterInitiatedError(teamB.player);
+        } else {
+          text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
+          throw new EndRoundError(text);
         }
       }
 
