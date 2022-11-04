@@ -288,18 +288,17 @@ export class Game {
   private async runDamagePhase(attackType: Attack, teamA: Team, teamB: Team) {
     let text = "**__Damage Phase__**\n";
     let damage = 0;
-    let attackDamage = 0;
 
     const nameA = teamA.player.name;
     const nameB = teamB.player.name;
 
     if (attackType === "Melee") {
-      attackDamage = teamA.player.melee;
+      damage = teamA.player.melee;
     } else if (attackType === "Ranged") {
-      attackDamage = teamA.player.ranged;
+      damage = teamA.player.ranged;
     }
 
-    text += `${attackDamage}`;
+    text += `${damage}`;
     let isConsecutive = false;
 
     for (let i = 0; i < teamA.attackCount; i++) {
