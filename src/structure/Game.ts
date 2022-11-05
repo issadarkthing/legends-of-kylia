@@ -30,7 +30,15 @@ class EndGameError extends PlayerError {
 }
 
 // error thrown when counter is initiated
-class CounterInitiatedError extends PlayerError {}
+class CounterInitiatedError extends PlayerError {
+  roll: number;
+
+  constructor(player: Player, roll: number) {
+    super(player);
+
+    this.roll = roll;
+  }
+}
 
 // error thrown when consecutive attack happens
 class ConsecutiveError extends PlayerError {}
@@ -228,7 +236,6 @@ export class Game {
     attackType: Attack, 
     teamA: Team, 
     teamB: Team,
-    counter = false,
   ) {
     let text = "**__Attack Phase__**\n";
 
@@ -265,7 +272,7 @@ export class Game {
         if (counterResult >= 11) {
           text += `(${rollB} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
           await this.updateGameText(text);
-          throw new CounterInitiatedError(teamB.player);
+          throw new CounterInitiatedError(teamB.player, counterResult);
         } else {
           text += `(${rollB} + ${teamB.player.speed}) < 11 The counter has failed`;
           throw new EndRoundError(text);
@@ -298,7 +305,6 @@ export class Game {
     attackType: Attack, 
     teamA: Team, 
     teamB: Team, 
-    counter = false,
   ) {
     let text = "**__Damage Phase__**\n";
     let damage = 0;
@@ -347,10 +353,6 @@ export class Game {
       text += `Total attack damage: ${initialDamage} / 2 = ${damage}\n`
     }
 
-    if (counter && !rolled20) {
-      damage = Math.floor(damage / 2);
-      text += `((${rolls.join(" + ")} + ${teamA.player.melee})/2) done to ${teamB.player.name}'s health\n`
-    }
 
     teamB.player.hp -= damage;
     text += `((${rolls.join(" + ")} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
@@ -367,6 +369,25 @@ export class Game {
 
     if (isConsecutive) {
       throw new ConsecutiveError(teamA.player);
+    }
+  }
+
+  private async runCounter(teamA: Team, teamB: Team, roll: number) {
+    let text = "**__Damage Phase__**\n";
+    let damage = await this.runRollAnimation(teamA.player, "Rolling to determine damage");
+
+    if (roll !== 20) {
+      text += `((${damage} + ${teamA.player.melee})/2) done to ${teamB.player.name}'s health\n`
+      damage = Math.floor(damage / 2);
+    } else {
+      text += `((${damage} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
+    }
+
+    teamB.player.hp -= damage;
+    await this.updateGameText(text);
+
+    if (teamB.player.hp <= 0) {
+      throw new EndGameError(teamA.player);
     }
   }
 
@@ -423,13 +444,12 @@ export class Game {
         } else if (err instanceof ConsecutiveError) {
           teams.reverse();
         } else if (err instanceof CounterInitiatedError) {
-          const { player } = err;
+          const { player, roll } = err;
           const [teamA, teamB] = player.id === this.teamA.player.id ? 
             [this.teamA, this.teamB] : [this.teamB, this.teamA];
 
           try {
-            await this.runAttackPhase("Melee", teamA, teamB, true);
-            await this.runDamagePhase("Melee", teamA, teamB, true);
+            await this.runCounter(teamA, teamB, roll);
           } catch (e) {
             const err = e as Error;
 
