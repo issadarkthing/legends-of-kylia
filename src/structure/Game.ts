@@ -265,16 +265,19 @@ export class Game {
         text += `${nameA} got nat 20 and receives 2 attacks in damage phase\n`;
       }
 
+      await this.updateGameText(text);
+
       // initiate counter
       if (totalRollA < totalRollB && teamB.consecutive < 3) {
         const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
+        let text = "**__Counter Phase__**\n";
 
         if (counterResult >= 11) {
           text += `(${rollB} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
           await this.updateGameText(text);
           throw new CounterInitiatedError(teamB.player, counterResult);
         } else {
-          text += `(${rollB} + ${teamB.player.speed}) < 11 The counter has failed`;
+          text += `(${rollB} + ${teamB.player.speed}) < 11 The counter has failed. Neutral is reset`;
           throw new EndRoundError(text);
         }
       } else {
@@ -296,9 +299,10 @@ export class Game {
         text += `${nameB} rolled higher than ${nameA} thus neutral is reset\n`;
         throw new EndRoundError(text);
       }
+    
+      await this.updateGameText(text);
     }
     
-    await this.updateGameText(text);
   }
 
   private async runDamagePhase(
