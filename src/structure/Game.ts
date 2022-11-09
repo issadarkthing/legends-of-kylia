@@ -273,11 +273,11 @@ export class Game {
         let text = "**__Counter Phase__**\n";
 
         if (counterResult >= 11) {
-          text += `(${rollB} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
+          text += `(${counterResult} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
           await this.updateGameText(text);
           throw new CounterInitiatedError(teamB.player, counterResult);
         } else {
-          text += `(${rollB} + ${teamB.player.speed}) < 11 The counter has failed. Neutral is reset`;
+          text += `(${counterResult} + ${teamB.player.speed}) < 11 The counter has failed. Neutral is reset`;
           throw new EndRoundError(text);
         }
       } else {
