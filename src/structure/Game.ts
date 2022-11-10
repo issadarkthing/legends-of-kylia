@@ -388,7 +388,7 @@ export class Game {
       text += `((${damage} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
     }
 
-    teamB.player.hp -= damage;
+    teamB.player.hp -= damage + teamA.player.melee;
     await this.updateGameText(text);
 
     if (teamB.player.hp <= 0) {
