@@ -383,16 +383,19 @@ export class Game {
 
   private async runCounter(teamA: Team, teamB: Team, roll: number) {
     let text = "**__Damage Phase__**\n";
-    let damage = await this.runRollAnimation(teamA.player, "Rolling to determine damage");
+    let rollResult = await this.runRollAnimation(teamA.player, "Rolling to determine damage");
+    const modifier = teamA.player.melee;
+    const damage = rollResult + modifier;
+    text += this.createRollText(teamA, rollResult, modifier);
 
     if (roll !== 20) {
-      text += `((${damage} + ${teamA.player.melee})/2) done to ${teamB.player.name}'s health\n`
-      damage = Math.floor(damage / 2);
+      text += `((${rollResult} + ${teamA.player.melee})/2) done to ${teamB.player.name}'s health\n`
+      rollResult = Math.floor(damage / 2);
     } else {
-      text += `((${damage} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
+      text += `((${rollResult} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
     }
 
-    teamB.player.hp -= damage + teamA.player.melee;
+    teamB.player.hp -= damage;
     await this.updateGameText(text);
 
     if (teamB.player.hp <= 0) {
