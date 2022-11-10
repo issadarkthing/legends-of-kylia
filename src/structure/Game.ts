@@ -270,12 +270,13 @@ export class Game {
       // initiate counter
       if (totalRollA < totalRollB && teamB.consecutive < 3) {
         const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
+        const totalCounter = counterResult + teamB.player.speed;
         let text = "**__Counter Phase__**\n";
 
-        if (counterResult + teamB.player.speed >= 11) {
+        if (totalCounter >= 11) {
           text += `(${counterResult} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
           await this.updateGameText(text);
-          throw new CounterInitiatedError(teamB.player, counterResult);
+          throw new CounterInitiatedError(teamB.player, totalCounter);
         } else {
           text += `(${counterResult} + ${teamB.player.speed}) < 11 The counter has failed. Neutral is reset`;
           throw new EndRoundError(text);
