@@ -272,7 +272,7 @@ export class Game {
         const counterResult = await this.runRollAnimation(teamB.player, `${nameB} is attempting to counter`);
         let text = "**__Counter Phase__**\n";
 
-        if (counterResult >= 11) {
+        if (counterResult + teamB.player.speed >= 11) {
           text += `(${counterResult} + ${teamB.player.speed}) > 10 Is a success and move to damage`;
           await this.updateGameText(text);
           throw new CounterInitiatedError(teamB.player, counterResult);
