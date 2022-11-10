@@ -246,12 +246,14 @@ export class Game {
     const rollB = await this.runRollAnimation(teamB.player, `${nameB} Rolling for defense`);
     const modifierB = teamB.player.defense;
     const totalRollB = rollB + modifierB;
-    text += this.createRollText(teamB, rollB, modifierB);
     const canReroll = teamA.attackCount === 2;
     teamA.attackCount = 1;
 
     if (attackType === "Melee") {
       const modifierA = teamA.player.melee;
+      text += this.createRollText(teamA, rollA, modifierA);
+      text += this.createRollText(teamB, rollB, modifierB);
+
       let totalRollA = rollA + modifierA;
 
       if (totalRollB > totalRollA && canReroll) {
@@ -287,8 +289,10 @@ export class Game {
 
     } else if (attackType === "Ranged") {
       const modifierA = teamA.player.melee;
-      let totalRollA = rollA + modifierA;
       text += this.createRollText(teamA, rollA, modifierA);
+      text += this.createRollText(teamB, rollB, modifierB);
+
+      let totalRollA = rollA + modifierA;
 
       if (totalRollB > totalRollA && canReroll) {
         rollA = await this.runRollAnimation(teamA.player, `${nameA} is able to re-roll in attempt to get higher roll`)
