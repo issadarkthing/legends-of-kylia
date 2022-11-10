@@ -385,12 +385,12 @@ export class Game {
     let text = "**__Damage Phase__**\n";
     let rollResult = await this.runRollAnimation(teamA.player, "Rolling to determine damage");
     const modifier = teamA.player.melee;
-    const damage = rollResult + modifier;
+    let damage = rollResult + modifier;
     text += this.createRollText(teamA, rollResult, modifier);
 
     if (roll !== 20) {
       text += `((${rollResult} + ${teamA.player.melee})/2) done to ${teamB.player.name}'s health\n`
-      rollResult = Math.floor(damage / 2);
+      damage = Math.floor(damage / 2);
     } else {
       text += `((${rollResult} + ${teamA.player.melee})) done to ${teamB.player.name}'s health\n`
     }
