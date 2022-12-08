@@ -288,7 +288,7 @@ export class Game {
       }
 
     } else if (attackType === "Ranged") {
-      const modifierA = teamA.player.melee;
+      const modifierA = teamA.player.ranged;
       text += this.createRollText(teamA, rollA, modifierA);
       text += this.createRollText(teamB, rollB, modifierB);
 
@@ -296,7 +296,7 @@ export class Game {
 
       if (totalRollB > totalRollA && canReroll) {
         rollA = await this.runRollAnimation(teamA.player, `${nameA} is able to re-roll in attempt to get higher roll`)
-        totalRollA = rollA + teamA.player.melee;
+        totalRollA = rollA + modifierA;
         text += `${nameB} rolled higher thus ${nameA} re-rolled and got ${totalRollA}\n`
       }
 
